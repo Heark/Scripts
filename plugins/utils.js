@@ -131,7 +131,6 @@
         return [].concat(array).splice(entry).join(join);
     };
     
-    
     Utils.stringToTime = function (str, time) {
         if (typeof str !== 'string') {
             return 0;
@@ -178,6 +177,148 @@
         }
         
         return id;
+    };
+    
+    Utils.channelNames = function () {
+        var channelIds = sys.channelIds(),
+            names = [],
+            len,
+            i;
+        
+        for (i = 0, len = channelIds.length; i < len; i += 1) {
+            names.push(sys.channel(channelIds[i]));
+        }
+        
+        return names;
+    };
+    
+    Utils.removeClanTags = function (name) {
+        return name.replace(/\[[^\]]*\]/gi, '').replace(/\{[^\]]*\}/gi, '');
+    };
+
+    Utils.hasIllegalChars = function hasIllegalChars(m) {
+        if (m.indexOf(/[\u202E\u202D]/) !== -1 || m.indexOf(/[\u0300-\u036F]/) !== -1 || m.indexOf(/[\u0430-\u044f\u2000-\u200d]/) !== -1 || m.indexOf("&#8") !== -1) {
+            return true;
+        }
+        
+        //if (/\u2061|\u2062|\u2063|\u2064|\u200B|\xAD/.test(m)) return true;
+        return false;
+    };
+    
+    Utils.fancyJoin = function (array) {
+        var x, retstr = '',
+            arrlen = array.length;
+
+        if (arrlen === 0 || arrlen === 1) {
+            return array.join("");
+        }
+
+        arrlen -= 1;
+
+        for (x in array) {
+            if (Number(x) === arrlen) {
+                retstr = retstr.substr(0, retstr.lastIndexOf(","));
+                retstr += " and " + array[x];
+
+                return retstr;
+            }
+
+            retstr += array[x] + ", ";
+        }
+
+        return "";
+    };
+        
+    Utils.getTimeString = function (sec) {
+        var s = [];
+        var n;
+        var d = [
+            [315360000, "decade"],
+            [31536000, "year"],
+
+            [2592000, "month"],
+            [604800, "week"],
+            [86400, "day"],
+            [3600, "hour"],
+            [60, "minute"],
+            [1, "second"]
+        ];
+
+        var j;
+        for (j = 0; j < d.length; j += 1) {
+            n = parseInt(sec / d[j][0], 10);
+            if (n > 0) {
+                s.push((n + " " + d[j][1] + (n > 1 ? "s" : "")));
+                sec -= n * d[j][0];
+                if (s.length >= d.length) {
+                    break;
+                }
+            }
+        }
+
+        if (s.length === 0) {
+            return "1 second";
+        }
+
+        return Utils.fancyJoin(s);
+    };
+    
+    Utils.hasDrizzleSwim = function (src) {
+        var swiftswim = false,
+            drizzle = false,
+            teams_banned = [],
+            ability,
+            team,
+            i;
+        
+        if (sys.hasTier(src, "5th Gen OU")) {
+            for (team = 0; team < sys.teamCount(src); team += 1) {
+                if (sys.tier(src, team) !== "5th Gen OU") {
+                    continue;
+                }
+                
+                for (i = 0; i < 6; i += 1) {
+                    ability = sys.ability(sys.teamPokeAbility(src, team, i));
+                    if (ability === "Swift Swim") {
+                        swiftswim = true;
+                    }
+                    
+                    if (ability === "Drizzle") {
+                        drizzle = true;
+                    }
+                    
+                    if (drizzle && swiftswim) {
+                        teams_banned.push(team);
+                        break;
+                    }
+                }
+            }
+        }
+        return teams_banned;
+    };
+
+    Utils.hasSandCloak = function (src) { // Has Sand Veil or Snow Cloak in tiers < 5th Gen Ubers.
+        var teams_banned = [],
+            ability,
+            team,
+            i;
+        
+        for (team = 0; team < sys.teamCount(src); team += 1) {
+            if (sys.tier(src, team) === "5th Gen Ubers") {
+                continue;
+            }
+            if (sys.gen(src, team) !== 5) {
+                continue; // Only care about 5th Gen
+            }
+            
+            for (i = 0; i < 6; i = 1) {
+                ability = sys.ability(sys.teamPokeAbility(src, team, i));
+                if (ability === "Sand Veil" || ability === "Snow Cloak") {
+                    teams_banned.push(team);
+                }
+            }
+        }
+        return teams_banned;
     };
     
     Utils.chans = {};

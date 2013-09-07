@@ -47,8 +47,14 @@
         return this;
     };
     
-    Storage.prototype.read = Storage.prototype.get = function get(key) {
-        return this.data[key];
+    Storage.prototype.read = Storage.prototype.get = function get(key, defaultVal) {
+        var val = this.data[key];
+        
+        if (val === undefined) {
+            return defaultVal;
+        }
+            
+        return val;
     };
     
     Storage.prototype.remove = function remove(key) {

@@ -4,14 +4,6 @@
 
 module.exports = {
     init: function () {
-        floodIgnoreCheck = function (src) {
-            var myNameToLower = sys.name(src).toLowerCase();
-            return myNameToLower in FloodIgnore;
-        }
-
-        removeTag = function (name) {
-            return name.replace(/\[[^\]]*\]/gi, '').replace(/\{[^\]]*\}/gi, '');
-        }
         randcolor = function () {
             var nums = 5;
             var str = '';
@@ -73,34 +65,6 @@ module.exports = {
             return sendStr;
         }
 
-
-        // Global var name: reg val name
-        var regVals = {
-            "MegaUsers": "Megausers",
-            "FloodIgnore": "FloodIgnore",
-            "Capsignore": "Capsignore",
-            "Autoidle": "Autoidle",
-            "Channeltopics": "Channeltopics",
-            "Mutes": "Mutes",
-            "Rangebans": "Rangebans",
-            "Kickmsgs": "Kickmsgs",
-            "Banmsgs": "Banmsgs",
-            "Welmsgs": "Welmsgs",
-            "Emotetoggles": "Emotetoggles",
-            "Emoteperms": "Emoteperms",
-            "Itemtoggles": "Itemtoggles"
-        };
-
-        for (var i in regVals) {
-            Reg.init(regVals[i], "{}");
-
-            try {
-                global[i] = JSON.parse(Reg.get(regVals[i]));
-            } catch (e) {
-                global[i] = {};
-            }
-        }
-
         hasEmotePerms = function (name) {
             var id = sys.id(name),
                 user,
@@ -146,23 +110,6 @@ module.exports = {
             var name = JSESSION.users(src).originalName.toLowerCase();
             return (hasBasicPermissions(src) || hasEmotePerms(name)) && Emotetoggles.hasOwnProperty(name);
         };
-        
-        itemsEnabled = function (src) {
-            var name = sys.name(src),
-                user;
-            
-            if (typeof src === 'string') {
-                name = src;
-            } else if ((user = JSESSION.users(src)) && user.originalName && typeof user.originalname === 'string') {
-                name = user.orignalName;
-            }
-            
-            return Itemtoggles.hasOwnProperty(name.toLowerCase());
-        };
-
-        getTier = function (src, tier) {
-            return sys.hasTier(src, tier);
-        }
 
         ev_name = function (num) {
             var ret = num == 0 ? "HP" : num == 1 ? "ATK" : num == 2 ? "DEF" : num == 3 ? "SPATK" : num == 4 ? "SPDEF" : "SPD";
@@ -175,155 +122,6 @@ module.exports = {
                 if (cmp(t, tier)) found = true;
             });
             return found;
-        }
-
-        hasDrizzleSwim = function (src) {
-            var swiftswim = false,
-                drizzle = false,
-                teams_banned = [];
-            if (getTier(src, "5th Gen OU")) {
-                for (var team = 0; team < sys.teamCount(src); ++team) {
-                    if (sys.tier(src, team) !== "5th Gen OU") continue;
-                    for (var i = 0; i < 6; i++) {
-                        ability = sys.ability(sys.teamPokeAbility(src, team, i));
-                        if (ability === "Swift Swim")
-                            swiftswim = true;
-                        if (ability === "Drizzle")
-                            drizzle = true;
-                        if (drizzle && swiftswim) {
-                            teams_banned.push(team);
-                            break;
-                        }
-                    }
-                }
-            }
-            return teams_banned;
-        }
-
-        hasSandCloak = function (src) { // Has Sand Veil or Snow Cloak in tiers < 5th Gen Ubers.
-            var teams_banned = [],
-                ability;
-            for (var team = 0; team < sys.teamCount(src); ++team) {
-                if (sys.tier(src, team) == "5th Gen Ubers") continue;
-                if (sys.gen(src, team) != 5) continue; // Only care about 5th Gen
-                for (var i = 0; i < 6; i++) {
-                    ability = sys.ability(sys.teamPokeAbility(src, team, i));
-                    if (ability == "Sand Veil" || ability == "Snow Cloak")
-                        teams_banned.push(team);
-                }
-            }
-            return teams_banned;
-        }
-
-        var globalVars = {
-            border: "<font color=green><timestamp/><b>«««««««««««««««««««««««««»»»»»»»»»»»»»»»»»»»»»»»»»</b></font>",
-            tourmode: 0,
-            spinTypes: [], // can contain: items, emotes, pokemons
-            muteall: false,
-            supersilence: false,
-            rouletteon: false,
-            htmlchatoff: false,
-            lolmode: false,
-            spacemode: false,
-            capsmode: false,
-            reversemode: false,
-            scramblemode: false,
-            colormode: false,
-            pewpewpew: false,
-            nightclub: false,
-            bots: true,
-            uniqueVisitors: {
-                ips: {},
-                count: 0,
-                total: 0
-            }
-        };
-
-        for (i in globalVars) {
-            if (typeof global[i] === "undefined") {
-                global[i] = globalVars[i];
-            }
-        }
-
-        Reg.init('MOTD', '');
-        Reg.init('maxPlayersOnline', 0);
-        Reg.init('servername', "Meteor Falls");
-        Reg.init("Leaguemanager", "HHT");
-
-        if (Reg.get("Champ") === undefined) {
-            var LeagueArray = ["Gym1", "Gym2", "Gym3", "Gym4", "Gym5", "Gym6", "Gym7", "Gym8", "Elite1", "Elite2", "Elite3", "Elite4", "Champ"];
-
-            for (var x in LeagueArray) {
-                Reg.init(LeagueArray[x], "");
-            }
-        }
-
-        Leaguemanager = Reg.get("Leaguemanager");
-
-        var channelIds = sys.channelIds();
-        ChannelNames = [];
-        for (var x in channelIds) {
-            ChannelNames.push(sys.channel(channelIds[x]));
-        }
-
-        PlayerIds = sys.playerIds();
-
-        getTimeString = function (sec) {
-            var s = [];
-            var n;
-            var d = [
-                [315360000, "decade"],
-                [31536000, "year"],
-
-                [2592000, "month"],
-                [604800, "week"],
-                [86400, "day"],
-                [3600, "hour"],
-                [60, "minute"],
-                [1, "second"]
-            ];
-
-            var j, n;
-            for (j = 0; j < d.length; ++j) {
-                n = parseInt(sec / d[j][0]);
-                if (n > 0) {
-                    s.push((n + " " + d[j][1] + (n > 1 ? "s" : "")));
-                    sec -= n * d[j][0];
-                    if (s.length >= d.length) {
-                        break;
-                    }
-                }
-            }
-
-            if (s.length == 0) {
-                return "1 second";
-            }
-
-            return andJoin(s);
-        }
-
-        andJoin = function (array) {
-            var x, retstr = '',
-                arrlen = array.length;
-
-            if (arrlen === 0 || arrlen === 1) {
-                return array.join("");
-            }
-
-            arrlen--;
-
-            for (x in array) {
-                if (Number(x) === arrlen) {
-                    retstr = retstr.substr(0, retstr.lastIndexOf(","));
-                    retstr += " and " + array[x];
-
-                    return retstr;
-                }
-
-                retstr += array[x] + ", ";
-            }
-
-            return "";
         }
 
         ban = function (name) {
@@ -409,17 +207,6 @@ module.exports = {
                 sys.setTimer(function () {
                     delete reconnectTrolls[ip];
                 }, 3000, false);
-            }
-        }
-        
-        pruneMutes = function () {
-            var x, t = Mutes,
-                c_inst, TIME_NOW = sys.time() * 1;
-            for (x in t) {
-                c_inst = t[x];
-                if (c_inst.time != 0 && c_inst.time < TIME_NOW) {
-                    delete t[x];
-                }
             }
         }
 
@@ -580,15 +367,6 @@ module.exports = {
             }
             return "<img src='pokemon:" + pokenum + "&shiny=" + shiny + "&back=" + back + "&gender=" + gender + "&gen=" + gan + "'>";
         }
-
-        hasIllegalChars = function (m) {
-            if (m.indexOf(/[\u202E\u202D]/) != -1) return true;
-            if (m.indexOf(/[\u0300-\u036F]/) != -1) return true;
-            if (m.indexOf(/[\u0430-\u044f\u2000-\u200d]/) != -1) return true;
-            if (m.indexOf("&#8") != -1) return true;
-            //if (/\u2061|\u2062|\u2063|\u2064|\u200B|\xAD/.test(m)) return true;
-            return false;
-        }
         
         Nightclub = {};
 
@@ -665,11 +443,6 @@ module.exports = {
             };
         }());
     
-        if (typeof teamSpammers == 'undefined') {
-            teamSpammers = {};
-        }
-        if (typeof reconnectTrolls == 'undefined') {
-            reconnectTrolls = {};
-        }
+        
     }
 };

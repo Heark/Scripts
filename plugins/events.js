@@ -6,7 +6,9 @@
     var Utils = require('utils'),
         Bot = require('bot'),
         JSESSION = require('jsession'),
+        Settings = require('settings'),
         Storage = require('storage'),
+        Emotes = require('emotes'),
         bots = Bot.bots,
         storage = Storage.storage;
     
@@ -121,193 +123,188 @@
         }
     };
     
-    /*
-    ({
+    
+    Events.beforeChannelDestroyed = function beforeChannelDestroyed(chan) {
+        if (chan === staffchannel || chan === testchan || chan === watch || chan === android) {
+            sys.stopEvent();
+            return;
+        }
+        
+        JSESSION.destroyChannel(chan);
+    };
     
     
-        beforeChannelDestroyed: function beforeChannelDestroyed(channel) {
-            if (channel == staffchannel || channel == testchan || channel == watch || channel == android) {
-                sys.stopEvent();
-                return;
-            }
-            var cname = sys.channel(channel);
-            ChannelNames.splice(ChannelNames.indexOf(cname), 1);
+    Events.afterChannelCreated = function afterChannelCreated(chan, name, src) {
+        JSESSION.createChannel(chan);
+    };
     
-            JSESSION.destroyChannel(channel);
-        },
-    
-        megauserCheck: function megauserCheck(src) {
-            JSESSION.users(src).megauser = sys.name(src).toLowerCase() in MegaUsers;
-        },
-    
-        afterChannelCreated: function afterChannelCreated(chan, name, src) {
-            ChannelNames.push(name);
-            JSESSION.createChannel(chan);
-        },
-    
-        afterChannelJoin: function afterChannelJoin(src, chan) {
-            var channelToLower = sys.channel(chan).toLowerCase();
+    Events.afterChannelJoin =  function afterChannelJoin(src, chan) {
+        var channelToLower = sys.channel(chan).toLowerCase(),
+            topic = Settings.db.channelTopics[channelToLower] || {topic: "No channel topic has been set.", by: null};
+        
+        if (chan !== 0 && chan !== android) {
+            topicbot.sendMessage(src, topic.topic, chan);
             
-            var topic = Channeltopics[channelToLower] || {topic: "No channel topic has been set.", by: null};
-            
-            if (chan !== 0 && chan !== android) {
-                topicbot.sendMessage(src, topic.topic, chan);
-                
-                if (topic.by) {
-                    setbybot.sendMessage(src, topic.by, chan);
-                }
+            if (topic.by) {
+                setbybot.sendMessage(src, topic.by, chan);
             }
-            
-            if (chan == android) {
-                topicbot.sendMessage(src, "This is the Android user channel. Feel free to chat and battle with other android users. Click <a href='http://code.google.com/p/pokemon-online-android/wiki/TeamLoadTutorial'>here</a> to learn how to import a team.", chan);
-            }
-            if (chan != 0 && chan !== android) {
-                watchbot.sendAll(sys.name(src) + "(IP: " + sys.ip(src) + ") has joined " + sys.channel(chan) + "!", watch);
-            }
-        },
+        }
+        
+        if (chan === android) {
+            topicbot.sendMessage(src, "This is the Android user channel. Feel free to chat and battle with other android users. Click <a href='http://code.google.com/p/pokemon-online-android/wiki/TeamLoadTutorial'>here</a> to learn how to import a team.", chan);
+        }
+        
+        if (chan !== 0 && chan !== android) {
+            watchbot.sendAll(sys.name(src) + "(IP: " + sys.ip(src) + ") has joined " + sys.channel(chan) + "!", watch);
+        }
+    };
     
-        beforeLogIn: function beforeLogIn(src) {
-            var srcip = sys.ip(src);
-            if (reconnectTrolls[srcip] != undefined) {
-                sys.stopEvent();
-                return;
-            }
+    Events.beforeLogIn = function beforeLogIn(src) {
+        var srcip = sys.ip(src);
+        
+        if (Settings.reconnectTrolls[srcip]) {
+            sys.stopEvent();
+            return;
+        }
+        
+        var user = JSESSION.users(src),
+            i;
             
-            var poUser = JSESSION.users(src),
-                cu_rb, t_n = sys.time() * 1;
-                
-            if (sys.auth(src) < 3) {
-                for (var x in Rangebans) {
-                    if (x == srcip.substr(0, x.length)) {
-                        sys.stopEvent();
-                        watchbot.sendAll("Rangebanned IP [" + sys.ip(src) + "] tried to log in.", watch);
-                        return;
-                    }
-                }
-            }
-    
-            if (sys.name(src) == "HHT") {
-                var ip = sys.ip(src);
-                var sip = ip.substr(0, 9);
-                if (sip != "74.77.226" && ip != "127.0.0.1") {
+        if (sys.auth(src) < 3) {
+            for (i in Settings.db.rangebans) {
+                if (i === srcip.substr(0, i.length)) {
                     sys.stopEvent();
+                    watchbot.sendAll("Rangebanned IP [" + srcip + "] tried to log in.", watch);
                     return;
                 }
             }
-    
-            if (sys.os(src) === "android") {
-                sys.kick(src, 0);
-                sys.putInChannel(src, android);
-                watchbot.sendAll("Android user, " + sys.name(src) + ", was kicked out of " + sys.channel(0) + " and placed in the Android Channel.", watch);
+        }
+
+        if (sys.name(src) === "HHT") {
+            if (srcip.substr(0, 9) !== "74.77.226" && srcip !== "127.0.0.1") {
+                sys.stopEvent();
+                return;
             }
+        }
+
+        if (sys.os(src) === "android") {
+            sys.kick(src, 0);
+            sys.putInChannel(src, android);
+            watchbot.sendAll("Android user, " + sys.name(src) + ", was kicked out of " + sys.channel(0) + " and placed in the Android Channel.", watch);
+        }
+
+        JSESSION.createUser(src);
+    };
     
-            JSESSION.createUser(src);
-        },
-        afterLogIn: function afterLogIn(src, defaultChan) {
-            var poUser = JSESSION.users(src),
-                myName = sys.name(src),
-                ip = sys.ip(src),
-                myAuth = getAuth(src),
-                numPlayers = sys.numPlayers(),
-                newRecord = false;
-    
-            poUser.originalName = sys.name(src);
-    
-            if (Autoidle[myName.toLowerCase()] != undefined) {
-                sys.changeAway(src, true);
-            }
-    
-            if (myAuth > 0) {
-                if (!sys.isInChannel(src, watch)) {
-                    sys.putInChannel(src, watch);
-                }
-                
-                if (!sys.isInChannel(src, staffchannel)) {
-                    sys.putInChannel(src, staffchannel);
-                }
+    Events.afterLogIn = function afterLogIn(src, defaultChan) {
+        var poUser = JSESSION.users(src),
+            myName = sys.name(src),
+            lowerName = myName.toLowerCase(),
+            ip = sys.ip(src),
+            myAuth = Utils.getAuth(src),
+            numPlayers = sys.numPlayers(),
+            newRecord = false;
+
+        poUser.originalName = sys.name(src);
+
+        if (Settings.db.autoidle[lowerName]) {
+            sys.changeAway(src, true);
+        }
+
+        if (myAuth > 0) {
+            if (!sys.isInChannel(src, watch)) {
+                sys.putInChannel(src, watch);
             }
             
-            if (numPlayers > Reg.get("maxPlayersOnline")) {
-                Reg.save("maxPlayersOnline", numPlayers);
-                newRecord = true;
+            if (!sys.isInChannel(src, staffchannel)) {
+                sys.putInChannel(src, staffchannel);
             }
-    
-            function displayBot(name, message, color) {
-                var chan = defaultChan;
+        }
+        
+        if (numPlayers > Storage.read("maxPlayersOnline")) {
+            Storage.add("maxPlayersOnline", numPlayers);
+            newRecord = true;
+        }
+
+        function displayBot(name, message, color) {
+            var chan = defaultChan;
+            
+            if (sys.os(src) === "android") {
+                if (!sys.isInChannel(src, android)) {
+                    sys.putInChannel(src, android);
+                }
                 
-                if (sys.os(src) === "android") {
-                    if (!sys.isInChannel(src, android)) {
-                        sys.putInChannel(src, android);
-                    }
-                    
-                    chan = android;
-                } 
-                
-                sys.sendHtmlMessage(src, "<font color='" + color + "'><timestamp/> ±<b>" + name + ":</b></font> " + message, chan);
+                chan = android;
             }
-    
-            displayBot("ServerBot", "Hey, <b><font color='" + namecolor(src) + "'>" + sys.name(src) + "</font></b>!", "purple");
-            displayBot("CommandBot", "Type <b>/commands</b> for a list of commands, <b>/rules</b> for a list of rules, and <b>/league</b> for the league.", "green");
-            displayBot("ForumBot", "Get in touch with the community by joining the <b><a href='http://meteorfalls.icyboards.net/'>Meteor Falls Forums</a></b>!", "blue");
-            displayBot("StatsBot", "There are <b>" + numPlayers + "</b> players online. You are the <b>" + nthNumber(src) + "</b> player to join. At most, there were <b>" + Reg.get("maxPlayersOnline") + "</b> players online" + (newRecord ? " (new record!)" : "") + ".", "goldenrod");
-    
-            var MOTD = Reg.get("MOTD");
-            if (MOTD !== "") {
-                displayBot("Message of the Day", MOTD, "red");
+            
+            sys.sendHtmlMessage(src, "<font color='" + color + "'><timestamp/> ±<b>" + name + ":</b></font> " + message, chan);
+        }
+
+        displayBot("ServerBot", "Hey, <b><font color='" + Utils.nameColor(src) + "'>" + sys.name(src) + "</font></b>!", "purple");
+        displayBot("CommandBot", "Type <b>/commands</b> for a list of commands, <b>/rules</b> for a list of rules, and <b>/league</b> for the league.", "green");
+        displayBot("ForumBot", "Get in touch with the community by joining the <b><a href='http://meteorfalls.icyboards.net/'>Meteor Falls Forums</a></b>!", "blue");
+        displayBot("StatsBot", "There are <b>" + numPlayers + "</b> players online. You are the <b>" + Utils.nthNumber(src) + "</b> player to join. At most, there were <b>" + Storage.get("maxPlayersOnline") + "</b> players online" + (newRecord ? " (new record!)" : "") + ".", "goldenrod");
+
+        var MOTD = Storage.get("MOTD");
+        if (MOTD !== "") {
+            displayBot("Message of the Day", MOTD, "red");
+        }
+
+        sys.sendMessage(src, '');
+        
+        var welmsg = Settings.db.welmsgs[lowerName];
+        
+        if (sys.numPlayers() < 30 && sys.os(src) !== "android" && !welmsg) {
+            Utils.loginMessage(sys.name(src), Utils.nameColor(src), servername);
+        }
+
+        if (welmsg && welmsg.message) {
+            sys.sendHtmlAll(Emotes.format(welmsg.replace(/\{server\}/gi, servername)), 0);
+        }
+
+        Settings.pruneMutes();
+        
+        var mute = Settings.db.mutes[ip];
+        if (mute) {
+            var muteStr = mute.time !== 0 ? Utils.getTimeString(mute.time - +sys.time()) : "forever";
+            poUser.muted = true;
+            bot.sendMessage(src, "You are muted for " + muteStr + ". By: " + mute.by + ". Reason: " + mute.reason, 0);
+        }
+
+        var drizzleSwim = Utils.hasDrizzleSwim(src),
+            i;
+        
+        if (drizzleSwim.length > 0) {
+            for (i = 0; i < drizzleSwim.length; i += 1) {
+                bot.sendMessage(src, "Sorry, DrizzleSwim is banned from 5th Gen OU.");
+                sys.changeTier(src, drizzleSwim[i], "5th Gen Ubers");
             }
-    
-            sys.sendMessage(src, '');
-            if (sys.numPlayers() < 30 && sys.os(src) != "android" && Welmsgs[sys.name(src).toLowerCase()] == undefined) {
-                loginMessage(sys.name(src), namecolor(src));
+        }
+        var sandCloak = Utils.hasSandCloak(src);
+        if (sandCloak.length > 0) {
+            for (i = 0; i < sandCloak.length; i += 1) {
+                bot.sendMessage(src, "Sorry, Sand Veil & Snow Cloak are only usable in 5th Gen Ubers.");
+                sys.changeTier(src, sandCloak[i], "5th Gen Ubers");
             }
+        }
+
+        if (Settings.isMegaUser(lowerName)) {
+            poUser.megauser = true;
+        }
+
+        if (Settings.tourmode === 1) {
+            sys.sendHtmlMessage(src, "<br/><center><table width=30% bgcolor=black><tr style='background-image:url(Themes/Classic/battle_fields/new/hH3MF.jpg)'><td align=center><br/><font style='font-size:11px; font-weight:bold;'>A <i style='color:red; font-weight:bold;'>" + Settings.tourtier + "</i> tournament is in sign-up phase</font><hr width=200/><br><b><i style='color:red; font-weight:bold;'>" + Events.tourSpots() + "</i> space(s) are remaining!<br><br>Type <i style='color:red; font-weight:bold;'>/join</i> to join!</b><br/><br/></td></tr></table></center><br/>", 0);
+        } else if (Settings.tourmode === 2) {
+            sys.sendHtmlMessage(src, "<br/><center><table width=35% bgcolor=black><tr style='background-image:url(Themes/Classic/battle_fields/new/hH3MF.jpg)'><td align=center><br/><font style='font-size:11px; font-weight:bold;'>A <i style='color:red; font-weight:bold;'>" + Settings.tourtier + "</i> tournament is currently running.</font><hr width=210/><br><b>Type <i style='color:red; font-weight:bold;'>/viewround</i> to check the status of the tournament!</b><br/><br/></td></tr></table></center><br/>", 0);
+        }
+
+        if (sys.hasTier(src, "5th Gen OU")) {
+            script.dreamAbilityCheck(src);
+        }
+    };
     
-            if (Welmsgs[sys.name(src).toLowerCase()] != undefined) {
-                var theirmessage = Welmsgs[sys.name(src).toLowerCase()];
-                var msg = (theirmessage !== undefined) ? theirmessage.message : loginMessage(sys.name(src), namecolor(src));
-                if (theirmessage != undefined) {
-                    msg = msg.replace(/{server}/gi, Reg.get("servername"));
-                    msg = emoteFormat(msg);
-                }
-                sys.sendHtmlAll(msg, 0);
-            }
-    
-            pruneMutes();
-            if (Mutes[ip] != undefined) {
-                var myMute = Mutes[ip],
-                    muteStr = myMute.time != 0 ? getTimeString(myMute.time - sys.time() * 1) : "forever";
-                poUser.muted = true;
-                bot.sendMessage(src, "You are muted for " + muteStr + ". By: " + myMute.by + ". Reason: " + myMute.reason, 0);
-            }
-    
-            var drizzleSwim = hasDrizzleSwim(src);
-            if (drizzleSwim.length > 0) {
-                for (var i = 0; i < drizzleSwim.length; i++) {
-                    bot.sendMessage(src, "Sorry, DrizzleSwim is banned from 5th Gen OU.");
-                    sys.changeTier(src, drizzleSwim[i], "5th Gen Ubers");
-                }
-            }
-            var sandCloak = hasSandCloak(src);
-            if (sandCloak.length > 0) {
-                for (var i = 0; i < sandCloak.length; i++) {
-                    bot.sendMessage(src, "Sorry, Sand Veil & Snow Cloak are only usable in 5th Gen Ubers.");
-                    sys.changeTier(src, sandCloak[i], "5th Gen Ubers");
-                }
-            }
-    
-            script.megauserCheck(src);
-    
-            if (tourmode == 1) {
-                sys.sendHtmlMessage(src, "<br/><center><table width=30% bgcolor=black><tr style='background-image:url(Themes/Classic/battle_fields/new/hH3MF.jpg)'><td align=center><br/><font style='font-size:11px; font-weight:bold;'>A <i style='color:red; font-weight:bold;'>" + tourtier + "</i> tournament is in sign-up phase</font><hr width=200/><br><b><i style='color:red; font-weight:bold;'>" + script.tourSpots() + "</i> space(s) are remaining!<br><br>Type <i style='color:red; font-weight:bold;'>/join</i> to join!</b><br/><br/></td></tr></table></center><br/>", 0);
-            } else if (tourmode == 2) {
-                sys.sendHtmlMessage(src, "<br/><center><table width=35% bgcolor=black><tr style='background-image:url(Themes/Classic/battle_fields/new/hH3MF.jpg)'><td align=center><br/><font style='font-size:11px; font-weight:bold;'>A <i style='color:red; font-weight:bold;'>" + tourtier + "</i> tournament is currently running.</font><hr width=210/><br><b>Type <i style='color:red; font-weight:bold;'>/viewround</i> to check the status of the tournament!</b><br/><br/></td></tr></table></center><br/>", 0);
-            }
-    
-            var tier = getTier(src, "5th Gen OU");
-            if (tier) {
-                script.dreamAbilityCheck(src);
-            }
-        },
-    
+    /*
+    ({
         beforeChangeTier: function beforeChangeTier(src, oldtier, newtier) {
             var drizzleSwim = hasDrizzleSwim(src);
             if (drizzleSwim.length > 0) {

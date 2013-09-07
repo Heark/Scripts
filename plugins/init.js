@@ -1,206 +1,9 @@
+/*jslint continue: true, es5: true, evil: true, forin: true, sloppy: true, vars: true, regexp: true, newcap: true*/
 /*global sys, SESSION, script: true, Qt, print, gc, version,
-    global: false, Plugin: true, Config: true, module: true, exports: true*/
+    GLOBAL: false, require: true, Config: true, module: true, exports: true*/
 
 module.exports = {
     init: function () {
-        if (!sys.os) {
-            sys.os = function (id) {
-                if (sys.info(id) === "Android player." && sys.avatar(id) === 72) {
-                    return "android";
-                }
-                return "windows";
-            };
-        }
-        html_escape = function (str) {
-            return str.replace(/\&/g, "&amp;").replace(/\</g, "&lt;").replace(/\>/g, "&gt;");
-        };
-
-        html_strip = function (str) {
-            return str.replace(/<\/?[^>]*>/g, "");
-        };
-        
-        // http://bost.ocks.org/mike/shuffle/
-        fisherYates = function shuffle(array) {
-          var m = array.length, t, i;
-        
-          // While there remain elements to shuffle…
-          while (m) {
-        
-            // Pick a remaining element…
-            i = Math.floor(Math.random() * m--);
-        
-            // And swap it with the current element.
-            t = array[m];
-            array[m] = array[i];
-            array[i] = t;
-          }
-        
-          return array;
-        }
-
-        String.prototype.format = function () {
-            var str = this;
-            var exp, i, args = arguments.length,
-                icontainer = 0;
-
-            for (i = 0; i < args; i++) {
-                icontainer++;
-                exp = new RegExp("%" + icontainer, "");
-                str = str.replace(exp, arguments[i]);
-            }
-            return str;
-        };
-
-        String.prototype.midRef = function (position, n) { // QStringRef QString::midRef
-            if (n == null || typeof n != "number") {
-                n = -1;
-            }
-
-            var str = this;
-            var strlen = str.length - 1;
-            if (position > strlen) {
-                return "";
-            }
-
-            var substri = str.substr(position);
-            if (n > strlen || n == -1) {
-                return substri;
-            }
-            return substri.substr(0, n);
-        }
-
-        String.prototype.replaceBetween = function (pos1, pos2, replace) {
-            var str = this,
-                returnStr = str,
-                sub = str.substr(pos1, pos2);
-
-            returnStr = returnStr.replace(sub, replace);
-
-            return returnStr;
-        };
-
-        String.prototype.scramble = function () {
-            var thisString = this.split("");
-            for (var i = thisString.length, j, k; i; j = parseInt(Math.random() * i), k = thisString[--i], thisString[i] = thisString[j], thisString[j] = k) {}
-            return thisString.join("");
-        };
-
-        sys.appendToFile("Reg.json", "");
-        if (sys.getFileContent("Reg.json") == "") {
-            sys.writeToFile("Reg.json", "{}");
-        }
-
-        script.loadRegHelper();
-        script.loadBots();
-        print("Registry has been loaded.");
-
-        var configFile = sys.getFileContent("config").split("\n"),
-            x, c_conf, serv = /server_name=/,
-            desc = /server_description=/,
-            ann = /server_announcement=/;
-        servername = "";
-        for (x in configFile) {
-            c_conf = configFile[x];
-            if (serv.test(c_conf) && !ann.test(c_conf) && !desc.test(c_conf)) {
-                servername = c_conf.substring(12, c_conf.length).replace(/\\xe9/i, "é").replace(/\\xa2/i, "¢").trim();
-                break;
-            }
-        }
-        
-        // If a player is banned.
-        isBanned = function (playerName) {
-            // Return their name. This allows us to accept ids as well.
-            var trueName = (sys.name(playerName) || playerName).toLowerCase(),
-                bans = sys.banList();
-            
-            return bans.indexOf(trueName) !== -1;
-        };
-        
-        // Returns the amount of seconds name is temporary banned for.
-        // This > sys.dbTempBanTime.
-        // NOTE: Unlike sys.dbTempBanTime, this returns 0 if the player isn't banned.
-        tempBanTime = function (playerName) {
-            // Return their name. This allows us to accept ids as well.
-            var trueName = (sys.name(playerName) || playerName).toLowerCase();
-            
-            // If they aren't banned, return 0.
-            if (!isBanned(trueName)) {
-                return 0;
-            }
-            
-            // Otherwise, return for how long they are banned.
-            return sys.dbTempBanTime(trueName);
-        };
-    
-        namecolor = function (src) {
-            var getColor = sys.getColor(src);
-            if (getColor == '#000000') {
-                var clist = ['#5811b1', '#399bcd', '#0474bb', '#f8760d', '#a00c9e', '#0d762b', '#5f4c00', '#9a4f6d', '#d0990f', '#1b1390', '#028678', '#0324b1'];
-                return clist[src % clist.length];
-            }
-            return getColor;
-        }
-
-        loginMessage = function (name, color) {
-            sys.sendHtmlAll("<font color='#0c5959'><timestamp/>±<b>WelcomeBot:</b></font> <b><font color=" + color + ">" + name + "</font></b> joined <b>" + Reg.get('servername') + "</b>!", 0);
-        }
-
-        logoutMessage = function (name, color) {
-            sys.sendHtmlAll("<font color='#0c5959'><timestamp/>±<b>GoodbyeBot:</b></font> <b><font color=" + color + ">" + name + "</font></b> left <b>" + Reg.get('servername') + "</b>!", 0);
-        }
-
-        cmp = function (a, b) {
-            return a.toLowerCase() == b.toLowerCase();
-        }
-
-        cut = function (array, entry, join) {
-            if (!join) join = "";
-            return array.splice(entry).join(join);
-        }
-
-        stringToTime = function (str, time) {
-            if (typeof str != 'string') {
-                return 0;
-            }
-
-            str = str.toLowerCase();
-            time = time * 1;
-
-            var unitString = str[0],
-                unitString2 = str.substr(0, 2);
-
-            var units = {
-                's': 1,
-                'm': 60,
-                'h': 3600,
-                'd': 86400,
-                'w': 604800,
-                'y': 31536000
-            },
-                units2 = {
-                    'mo': 2592000,
-                    'de': 315360000
-                };
-
-            var unit1 = units[unitString],
-                unit2 = units2[unitString2];
-
-            if (unit2 != undefined) {
-                return unit2 * time;
-            }
-
-            if (unit1 != undefined) {
-                return unit1 * time;
-            }
-
-            return units.m * time;
-        }
-
-        getAuth = function (id) {
-            if (typeof (id) == "number") return sys.auth(id);
-            else return (sys.id(id) !== undefined) ? sys.auth(sys.id(id)) : 0;
-        }
-
         floodIgnoreCheck = function (src) {
             var myNameToLower = sys.name(src).toLowerCase();
             return myNameToLower in FloodIgnore;
@@ -465,16 +268,6 @@ module.exports = {
 
         PlayerIds = sys.playerIds();
 
-        var makeChan = function (cname) {
-            sys.createChannel(cname);
-            return sys.channelId(cname);
-        }
-
-        staffchannel = makeChan("Auth Party");
-        testchan = makeChan("Ground Zero");
-        watch = makeChan("Watch");
-        android = makeChan("Android Channel");
-
         getTimeString = function (sec) {
             var s = [];
             var n;
@@ -629,10 +422,6 @@ module.exports = {
                 }
             }
         }
-
-        RegExp.quote = function (str) {
-            return str.replace(/([.?*+^$[\]\\(){}|-])/g, "\\$1");
-        };
 
         script.loadCommandLists();
         print("Command lists loaded into memory.");

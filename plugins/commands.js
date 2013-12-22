@@ -2017,24 +2017,23 @@
         ban(commandData);
     });
     addCommand(2, "unban", function (src, command, commandData, tar, chan) {
-        if (!sys.dbIp(commandData)) {
+        var target = sys.dbIp(commandData);
+        if (!target) {
             bot.sendMessage(src, "No player exists by this name!", chan);
             return;
         }
 
-        var banlist = sys.banList(),
-            a,
-            found = false;
-        for (a in banlist) {
-            if (sys.dbIp(commandData) === sys.dbIp(banlist[a])) {
-                found = true;
-                sys.unban(banlist[a]);
-                sys.sendHtmlAll("<font color=blue><timestamp/><b>" + banlist[a] + " was unbanned by " + Utils.escapeHtml(sys.name(src)) + "!", 0);
-            }
-        }
-        if (!found) {
+        var ipBanList = sys.banList().map(function (name) {
+            return sys.dbIp(name);
+        });
+
+        if (ipBanList.indexOf(target) === -1) {
             bot.sendMessage(src, "He/she's not banned!", chan);
+            return;
         }
+
+        sys.unban(commandData);
+        sys.sendHtmlAll("<font color=blue><timestamp/><b>" + Utils.escapeHtml(commandData) + " was unbanned by " + Utils.escapeHtml(sys.name(src)) + "!", 0);
     });
     /** OWNER COMMANDS */
     addListCommand(3, "ownercommands", "Owner");

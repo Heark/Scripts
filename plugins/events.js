@@ -542,7 +542,7 @@
                 bot.sendMessage(src, "You may not kick this person!");
                 return;
             } else {
-                var theirmessage = Kickmsgs[Utils.realName(src)];
+                var theirmessage = Kickmsgs[Utils.realName(src).toLowerCase()];
                 var msg = (theirmessage) ? theirmessage.message : "<font color='navy'><timestamp/><b>" + sys.name(src) + " kicked " + Utils.escapeHtml(sys.name(bpl)) + "!</font></b>";
                 if (theirmessage) {
                     msg = msg.replace(/\{Target\}/gi, sys.name(bpl));
@@ -562,7 +562,7 @@
             }
 
             var targetName = sys.name(bpl), timeString;
-            var banMessage = Banmsgs[Utils.realName(src)];
+            var banMessage = Banmsgs[Utils.realName(src).toLowerCase()];
 
             if (banMessage) {
                 banMessage = banMessage.replace(/\{Target\}/gi, targetName);

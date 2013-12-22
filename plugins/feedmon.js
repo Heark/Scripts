@@ -668,4 +668,5 @@
         return true;
     };
     module.exports = initialize;
+    module.exports.addCommands = addCommands;
 }());

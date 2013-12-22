@@ -138,6 +138,7 @@
         Commands.add("modcommands", "To view the commands for <b>moderators</b>.");
         Commands.add("admincommands", "To view the commands for <b>administrators</b>.");
         Commands.add("ownercommands", "To view the commands for <b>owners</b>.");
+        Commands.add("maintainercommands", "To view commands for <b>maintainers</b>.");
         Commands.finish();
 
         Lists.Commands = Commands;
@@ -375,6 +376,23 @@
         Auth.finish();
 
         Lists.Auth = Auth;
+
+        /** MAINTAINER COMMANDS **/
+        var Maintainer = new CommandList("Maintainer Commands", "navy");
+        Maintainer.add("webcall", "Loads scripts.js from the given [source] (by default, the Scripts repository's scripts.js). Use this when scripts.js is updated. Usually doesn't fully reload plugins.", ["source"]);
+        Maintainer.add("updatetiers", "Loads tiers.xml from the given [source] (by default, the Server-Shit repository's tiers.xml).", ["source"]);
+        Maintainer.add("updateann", "Sets the server announcement to the file from the given [source] (by default, the Server-Shit repository's announcement.html).", ["source"]);
+        Maintainer.add("testann", "Sets the server announcement to the file from the given [source] (by default, the Server-Shit repository's announcement.html), but only for you (for testing purposes). It's recommended to use the Designer Plugin instead.", ["source"]);
+        Maintainer.add("updatedesc", "Sets the server description to the file from the given [source] (by default, the Server-Shit repository's description.html).", ["source"]);
+        Maintainer.add("update", "Updates the given [plugins] (separated by spaces: events init utils). '.js' at the end of the plugin name is optional and will be added automatically.", ["plugins"]);
+        Maintainer.add("init", "Calls script.init");
+        Maintainer.add("sessionrefill", "Calls SESSION.refill");
+        Maintainer.add("resetprofiling", "Calls sys.resetProfiling");
+        Maintainer.add("regremove", "Removes the given [value] from the reg.", ["value"]);
+        Maintainer.add("dump", "Dumps information about the given type. Available types are: * (selects everything, default), memory, profile, session, reg.", ["type1", "type2"]);
+        Maintainer.finish();
+
+        Lists.Maintainer = Maintainer;
         return Lists;
     }
 

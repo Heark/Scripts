@@ -2152,6 +2152,8 @@
     });
 
     /* Maintainer commands */
+    addListCommand(3, "maintainercommands", "Maintainer", null, addCommand.flags.MAINTAINERS);
+
     addMaintainerCommand("update", function (src, command, commandData, tar, chan) {
         if (!commandData) {
             bot.sendMessage(src, "Specify a plugin!", chan);
@@ -2187,8 +2189,13 @@
     });
 
     addMaintainerCommand("init", function (src, command, commandData, tar, chan) {
-        script.init();
-        bot.sendMessage(src, "Init was called successfully.", chan);
+        try {
+            script.init();
+            bot.sendMessage(src, "Init was called successfully.", chan);
+        } catch (ex) {
+            bot.sendMessage(src, "Couldn't call init: " + ex, chan);
+            sys.sendHtmlMessage(src, ex.backtrace.join("<br/>"), chan);
+        }
     });
 
     addMaintainerCommand(["webcall", "updatescript"], function (src, command, commandData, tar, chan) {
@@ -2256,7 +2263,7 @@
         }
     });
 
-    addMaintainerCommand(["updatetiers"], function (src, command, commandData, tar, chan) {
+    addMaintainerCommand("updatetiers", function (src, command, commandData, tar, chan) {
         if (!commandData || (commandData.substr(0, 7) !== 'http://' && commandData.substr(0, 8) !== 'https://')) {
             commandData = Config.dataurl + "tiers.xml";
         }

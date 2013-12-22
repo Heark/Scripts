@@ -191,8 +191,8 @@ poScript = ({
         SESSION.users(src).megauser = MegaUsers.hasOwnProperty(sys.name(src).toLowerCase());
     },
 
-    afterChannelCreated: function afterChannelCreated(chan, name, src) {
-    },
+    /*afterChannelCreated: function afterChannelCreated(chan, name, src) {
+    },*/
 
     afterChannelJoin: function afterChannelJoin(src, chan) {
         require.callPlugins("afterChannelJoin", src, chan);

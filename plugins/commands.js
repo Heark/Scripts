@@ -1424,9 +1424,12 @@
             msg = msg.replace(/\{Target\}/gi, tarNames);
         }
 
+        sys.sendHtmlAll(msg, 0);
         if (reason) {
-            sys.sendHtmlAll(msg + "<br></font></b><font color=black><timestamp/><b>Reason:</font></b> " + reason);
+            sys.sendHtmlAll("<font color=black><timestamp/><b>Reason:</font></b> " + reason, 0);
         }
+
+        Utils.watch.notify(Utils.nameIp(src) + " kicked " + tarNames + ".");
 
         for (i = 0, len = toKick.length; i < len; i += 1) {
             Utils.mod.kick(sys.id(toKick[i]));

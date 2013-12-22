@@ -11,7 +11,7 @@
 
                 if (id && sys.isInChannel(id, 0)) {
                     sys.sendMessage(id, "Script warning in function " + func + ": " + message, 0);
-                    sys.sendMessage(id, backtrace, 0);
+                    sys.sendHtmlMessage(id, backtrace.split("\n").join("<br/>"), 0);
                 }
             }
         },

@@ -428,7 +428,7 @@
 
             for (i = 0, len = pids.length; i < len; i += 1) {
                 id = pids[i];
-                if (sys.ip(id) === ip) {
+                if (sys.ip(id) === ip && sys.loggedIn(id)) {
                     sys.kick(id);
                     found = true;
                 }

@@ -36,10 +36,12 @@
     CommandList.prototype.add = function (cmd, desc, args) {
         if (this.forCommands) {
             if (!args) {
-                cmd = "<a href='po:send//" + cmd + "' style='text-decoration: none; color: black;'>" + cmd + "</a>";
+                cmd = "/<a href='po:send//" + cmd + "' style='text-decoration: none; color: black;'>" + cmd + "</a>";
+            } else {
+                cmd = "/" + cmd;
             }
 
-            this.template += "<li><b>/" + cmd + "</b>" + formatArgs(args) + " " + desc + "</li>";
+            this.template += "<li><b>" + cmd + "</b>" + formatArgs(args) + " " + desc + "</li>";
         } else {
             this.template += "<li><b>" + cmd + "</b></li>";
         }

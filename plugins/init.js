@@ -352,44 +352,42 @@ module.exports = {
             return "<a href='po:join/" + channel + "'>#" + channel + "</a>";
         };
 
-        addChannelLinks = function (line2) {
-            if (line2.indexOf('#') === -1) {
-                return line2;
+        addChannelLinks = function (line) {
+            if (line.indexOf('#') === -1) {
+                return line;
             }
-            var line = line2;
-            var pos = 0;
-            pos = line.indexOf('#', pos);
-            var longestName = "",
-                longestChannelName = "",
-                html = "",
-                channelName = "",
-                res,
-                ChannelNames = sys.channelIds().map(function(channelId) {
-                    return sys.channel(channelId);
-                });
 
-            function sort(name) {
-                channelName = String(line.midRef(pos, name.length));
-                res = channelName.toLowerCase() === name.toLowerCase();
-                if (res && longestName.length < channelName.length) {
-                    longestName = name;
-                    longestChannelName = channelName;
+            var pos = 0, strlen = line.length;
+            var str = '', fullChanName, chanName, chr, index, i;
+            var channelNames = Utils.channelNames(true); // lower case names
+
+            while ((chr = line[pos])) {
+                if (chr === '#') {
+                    str += '#';
+                    pos += 1;
+
+                    fullChanName = '';
+                    chanName = '';
+                    for (i = 0; i < 20 && (chr = line[pos]); i += 1) {
+                        fullChanName += chr;
+                        if (channelNames.indexOf(fullChanName.toLowerCase()) !== -1) {
+                            chanName = fullChanName;
+                        }
+                        pos += 1;
+                    }
+
+                    if (chanName) {
+                        str += '<a href="po:join/' + chanName + '">#' + chanName + '</a>' + fullChanName.substr(chanName.length);
+                    } else {
+                        str += fullChanName;
+                    }
+                } else {
+                    str += chr;
                 }
-            }
-
-            while (pos !== -1) {
                 pos += 1;
-                ChannelNames.forEach(sort);
-                if (longestName !== "") {
-                    html = "<a href=\"po:join/" + longestName + "\">#" + longestChannelName + "</a>";
-                    line = line.replaceBetween(pos - 1, longestName.length + 1, html);
-                    pos += html.length - 1;
-                    longestName = "";
-                    longestChannelName = "";
-                }
-                pos = line.indexOf('#', pos);
             }
-            return line;
+
+            return str;
         };
 
         function formatLinks(message) {

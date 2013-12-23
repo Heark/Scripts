@@ -131,6 +131,22 @@
             sys.sendHtmlAll("<font color='#0c5959'><timestamp/>±<b>GoodbyeBot:</b></font> <b><font color=" + color + ">" + name + "</font></b> left <b>" + Reg.get('servername') + "</b>!", 0);
         };
 
+        util.channelNames = function (lowercase) {
+            var cids = sys.channelIds(), len, i;
+            var names = [], cname;
+
+            for (i = 0; i < len; i += 1) {
+                cname = sys.channel(cids[i]);
+                if (lowercase) {
+                    cname = cname.toLowerCase();
+                }
+
+                names.push(cname);
+            }
+
+            return names;
+        };
+
         util.isTier = function (tier) {
             var list = sys.getTierList(),
                 len, i;

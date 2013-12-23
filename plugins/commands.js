@@ -2317,7 +2317,7 @@
         });
     });
 
-    require('feedmon.js').addCommands();
+    //require('feedmon.js').addCommands();
 
     /* Exports & metadata */
     module.exports = {

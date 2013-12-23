@@ -4,6 +4,7 @@
 
     module.exports = {
         warning: function (func, message, backtrace) {
+            return;
             var len = sendWarningsTo.length, id, i;
 
             for (i = 0; i < len; i += 1) {
@@ -16,6 +17,7 @@
             }
         },
         beforeNewMessage: function (message) {
+            return;
             if (ignoreNextChanMsg) {
                 // Don't call sys.stopEvent here
                 ignoreNextChanMsg = false;
@@ -35,6 +37,7 @@
             }
         },
         afterNewMessage: function (message) {
+            return;
             if (message.substr(0, 33) === "The name of the server changed to") {
                 servername = message.substring(34, message.lastIndexOf("."));
                 return;

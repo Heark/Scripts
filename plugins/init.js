@@ -353,38 +353,43 @@ module.exports = {
         };
 
         addChannelLinks = function (line) {
-            if (line.indexOf('#') === -1) {
+            var index = line.indexOf('#');
+            if (index === -1) {
                 return line;
             }
 
-            var pos = 0, strlen = line.length;
-            var str = '', fullChanName, chanName, chr, index, i;
+            var str = '', fullChanName, chanName, chr, lastIndex = 0, pos, i;
             var channelNames = Utils.channelNames(true); // lower case names
 
-            while ((chr = line[pos])) {
-                if (chr === '#') {
-                    str += '#';
-                    pos += 1;
+            while (index !== -1) {
+                str += line.substring(lastIndex, index);
+                lastIndex = index + 1; // Skip over the '#'
 
-                    fullChanName = '';
-                    chanName = '';
-                    for (i = 0; i < 20 && (chr = line[pos]); i += 1) {
-                        fullChanName += chr;
-                        if (channelNames.indexOf(fullChanName.toLowerCase()) !== -1) {
-                            chanName = fullChanName;
-                        }
-                        pos += 1;
-                    }
+                fullChanName = '';
+                chanName = '';
 
-                    if (chanName) {
-                        str += '<a href="po:join/' + chanName + '">#' + chanName + '</a>' + fullChanName.substr(chanName.length);
-                    } else {
-                        str += fullChanName;
+                for (i = 0, pos = lastIndex; i < 20 && (chr = line[pos]); i += 1, pos += 1) {
+                    fullChanName += chr;
+                    if (channelNames.indexOf(fullChanName.toLowerCase()) !== -1) {
+                        chanName = fullChanName;
                     }
-                } else {
-                    str += chr;
                 }
-                pos += 1;
+
+                if (chanName) {
+                    str += "<a href='po:join/" + chanName + "'>#" + chanName + "</a>";
+                    lastIndex += chanName.length;
+                } else {
+                    str += '#';
+                }
+
+                index = line.indexOf('#', lastIndex);
+            }
+
+            // Add any leftover invalid channel(s).
+            if (!chanName && fullChanName) {
+                str += fullChanName;
+            } else if (chanName && chanName.length < fullChanName.length) {
+                str += fullChanName.substr(chanName.length);
             }
 
             return str;

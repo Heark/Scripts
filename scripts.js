@@ -5,9 +5,9 @@
 
 Config = {
     // Configuration for the script.
-    servername: "Meteor Falls",
+    servername: "Based Gods",
 
-    maintainers: ['[VP]Blade', 'Ethan', 'TheUnknownOne', '[ᴠᴘ]ʙʟᴀᴅᴇ'],
+    maintainers: ['[BG]Heark', '[BG]OORA'],
 
     // Repo to load plugins from.
     repourl: "http://meteor-falls.github.io/Scripts/",
